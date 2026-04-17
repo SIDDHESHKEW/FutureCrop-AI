@@ -39,8 +39,11 @@ function AppConsole() {
   });
   const [genotype, setGenotype] = useState<Genotype | null>(null);
   const [predictions, setPredictions] = useState<PredictionItem[]>([]);
-  const StepSimulateWithSetters = StepSimulate as any;
-  const StepResultsWithPredictions = StepResults as any;
+  const bestGenotype = predictions.length
+    ? predictions.reduce((a, b) =>
+      a.yield_estimate > b.yield_estimate ? a : b,
+    ).id
+    : null;
 
   const reset = () => {
     setStep("region");
@@ -109,7 +112,10 @@ function AppConsole() {
           <StepRegion
             selected={region}
             onSelect={setRegion}
-            onNext={() => setStep("scenario")}
+            onNext={(nextRegion) => {
+              setRegion(nextRegion);
+              setStep("scenario");
+            }}
           />
         )}
         {step === "scenario" && (
@@ -117,17 +123,21 @@ function AppConsole() {
             scenario={scenario}
             onChange={setScenario}
             onBack={() => setStep("region")}
-            onNext={() => setStep("simulate")}
+            onNext={(nextScenario) => {
+              setScenario(nextScenario);
+              setStep("simulate");
+            }}
           />
         )}
-        {step === "simulate" && (
-          <StepSimulateWithSetters
+        {step === "simulate" && region && (
+          <StepSimulate
             onDone={handleSimulationDone}
-            setPredictions={setPredictions}
+            region={region.name}
+            scenario={scenario.ssp}
           />
         )}
         {step === "results" && region && (
-          <StepResultsWithPredictions
+          <StepResults
             region={region}
             scenario={scenario}
             predictions={predictions}
@@ -138,6 +148,7 @@ function AppConsole() {
         )}
         {step === "analysis" && genotype && (
           <StepAnalysis
+            genotypeId={bestGenotype}
             genotype={genotype}
             predictions={predictions}
             onBack={() => setStep("results")}
@@ -148,6 +159,7 @@ function AppConsole() {
           <StepConfirm
             region={region}
             scenario={scenario}
+            predictions={predictions}
             genotype={genotype ?? {
               id: "Z-7421", name: "Maize", trait: "Drought-tolerant",
               yield: 9.4, risk: 0.12, water: 0.78, confidence: 0.947,

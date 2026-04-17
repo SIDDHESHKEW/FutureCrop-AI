@@ -22,7 +22,7 @@ export function StepScenario({
 }: {
   scenario: Scenario;
   onChange: (s: Scenario) => void;
-  onNext: () => void;
+  onNext: (s: Scenario) => void;
   onBack: () => void;
 }) {
   const setSSP = (ssp: Scenario["ssp"]) => {
@@ -106,7 +106,7 @@ export function StepScenario({
             ← Back
           </button>
           <button
-            onClick={onNext}
+            onClick={() => onNext(scenario)}
             className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow"
           >
             Run simulation →

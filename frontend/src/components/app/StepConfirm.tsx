@@ -3,21 +3,75 @@ import type { Genotype } from "./StepResults";
 import { Check, Download, FileText, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
+type PredictionItem = {
+  id: string;
+  yield_estimate: number;
+  confidence: number;
+};
+
 export function StepConfirm({
-  region, scenario, genotype, onBack, onRestart,
+  region, scenario, genotype, predictions = [], onBack, onRestart,
 }: {
   region: Region;
   scenario: Scenario;
   genotype: Genotype;
+  predictions?: PredictionItem[];
   onBack: () => void;
   onRestart: () => void;
 }) {
   const [signed, setSigned] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const txid = `0x${(region.id + scenario.ssp + genotype.id)
     .split("")
     .reduce((a, c) => a + c.charCodeAt(0), 0)
     .toString(16)
     .padStart(8, "0")}…${genotype.id.slice(-3).toLowerCase()}`;
+
+  const toFileSafe = (value: string) => value.replace(/[^a-zA-Z0-9_-]+/g, "_");
+
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const requestPredictions = predictions.length > 0
+        ? predictions
+        : [{
+            id: genotype.id,
+            yield_estimate: genotype.yield,
+            confidence: genotype.confidence,
+          }];
+
+      const response = await fetch("http://127.0.0.1:8000/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          region: region.name,
+          scenario: scenario.ssp,
+          predictions: requestPredictions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Generate PDF failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `blueprint_${toFileSafe(region.name)}_${toFileSafe(scenario.ssp)}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download PDF");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-xl animate-fade-in">
@@ -115,8 +169,12 @@ export function StepConfirm({
                       4.2 MB · 28 pages · SHAP-included
                     </div>
                   </div>
-                  <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20">
-                    <Download className="h-3.5 w-3.5" /> Download
+                    <button
+                      onClick={handleDownloadPdf}
+                      disabled={downloading}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-60"
+                    >
+                    <Download className="h-3.5 w-3.5" /> {downloading ? "Downloading..." : "Download"}
                   </button>
                 </div>
               </div>

@@ -6,20 +6,20 @@ You can run from either directory:
 - Backend folder: E:/Desktop E-Drive/Projects/Hackthon projects/FarmerCrop AI/backend
 
 ## Prerequisites
-- Python virtual environment already exists at backend/.venv
+- Python virtual environment already exists at .venv (project root)
 
 ## Install dependencies
 Use the backend virtual environment Python:
 
 ```powershell
-& "./.venv/Scripts/python.exe" -m pip install fastapi uvicorn
+& "./.venv/Scripts/python.exe" -m pip install fastapi uvicorn numpy scikit-learn reportlab
 ```
 
 ## Start backend server
 If you run from project root:
 
 ```powershell
-& "./backend/.venv/Scripts/python.exe" -m uvicorn backend.main:app --reload
+& "./.venv/Scripts/python.exe" -m uvicorn backend.main:app --reload
 ```
 
 If you run from backend folder directly, use:

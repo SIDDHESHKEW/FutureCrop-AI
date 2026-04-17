@@ -1,5 +1,5 @@
 import type { Genotype } from "./StepResults";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar, BarChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis,
   Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -22,19 +22,36 @@ type ShapResponse = {
   base_value: number;
 };
 
-export function StepAnalysis({
-  genotype, onBack, onConfirm, predictions = [],
-}: {
+const FEATURE_LABELS: Record<string, string> = {
+  SNP_0: "Heat Tolerance",
+  SNP_1: "Drought Resistance",
+  SNP_2: "Soil Moisture Efficiency",
+  SNP_3: "Growth Rate",
+  SNP_4: "Nutrient Uptake",
+  SNP_5: "Root Strength",
+  SNP_6: "Water Retention",
+  SNP_7: "Stress Resistance",
+};
+
+type Props = {
+  genotypeId: string | null;
   genotype: Genotype;
   onBack: () => void;
   onConfirm: () => void;
   predictions?: PredictionItem[];
-}) {
+};
+
+export function StepAnalysis({
+  genotypeId, genotype, onBack, onConfirm, predictions = [],
+}: Props) {
   const [shapData, setShapData] = useState<ShapResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadShap = async (genotypeId: string) => {
+    console.log("[SHAP] calling with:", genotypeId);
     setLoading(true);
+    setError(null);
 
     try {
       const res = await fetch(`http://127.0.0.1:8000/shap/${genotypeId}`);
@@ -49,24 +66,68 @@ export function StepAnalysis({
       setShapData(data);
     } catch (err) {
       console.error(err);
-      alert("SHAP failed");
+      setShapData(null);
+      setError("SHAP failed");
+      return;
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
-    if (predictions && predictions.length > 0) {
-      const best = predictions.reduce((a, b) =>
-        a.yield_estimate > b.yield_estimate ? a : b,
-      );
-
-      loadShap(best.id);
+    if (!genotypeId) {
+      console.log("[SHAP] genotypeId missing");
       return;
     }
 
-    loadShap(genotype.id);
-  }, [predictions, genotype.id]);
+    loadShap(genotypeId);
+  }, [genotypeId]);
+
+  const topFeatures = useMemo<ShapFeature[]>(() => {
+    if (!shapData?.features || shapData.features.length === 0) {
+      return [];
+    }
+
+    return [...shapData.features]
+      .map((f) => ({
+        ...f,
+        name: FEATURE_LABELS[f.name] ?? f.name,
+      }))
+      .sort((a, b) => Math.abs(b.importance_score) - Math.abs(a.importance_score))
+      .slice(0, 3);
+  }, [shapData]);
+
+  const maxAbsImportance = useMemo(() => {
+    if (topFeatures.length === 0) return 1;
+    return Math.max(...topFeatures.map((f) => Math.abs(f.importance_score)));
+  }, [topFeatures]);
+
+  const explanationText = useMemo(() => {
+    if (topFeatures.length === 0) {
+      return "No clear SHAP explanation is available yet.";
+    }
+
+    const positives = topFeatures.filter((f) => f.importance_score > 0);
+    const negatives = topFeatures.filter((f) => f.importance_score < 0);
+
+    const positiveText = positives
+      .slice(0, 2)
+      .map((f) => f.name.toLowerCase())
+      .join(" and ");
+    const topNegative = negatives[0]?.name.toLowerCase();
+
+    if (positiveText && topNegative) {
+      return `This genotype performs well due to strong ${positiveText}, while lower ${topNegative} slightly reduces performance.`;
+    }
+    if (positiveText) {
+      return `This genotype performs well due to strong ${positiveText}.`;
+    }
+    if (topNegative) {
+      return `This genotype is mainly limited by lower ${topNegative}.`;
+    }
+
+    return "No clear SHAP explanation is available yet.";
+  }, [topFeatures]);
 
   const radar = [
     { feature: "Yield", v: (genotype.yield / 12) * 100 },
@@ -77,16 +138,12 @@ export function StepAnalysis({
     { feature: "Maturity", v: 70 - genotype.risk * 30 },
   ];
 
-  const shap = [
-    { f: "Soil moisture", v: 0.42 },
-    { f: "Heat days >35°C", v: -0.31 },
-    { f: "CO₂ fertilization", v: 0.27 },
-    { f: "Genotype × env", v: 0.21 },
-    { f: "Nitrogen flux", v: 0.16 },
-    { f: "Pest pressure", v: -0.14 },
-    { f: "Solar radiation", v: 0.11 },
-    { f: "Salinity", v: -0.08 },
-  ];
+  const shap = topFeatures.map((f) => ({ f: f.name, v: f.importance_score }));
+
+  const maxAbsChart = useMemo(() => {
+    if (shap.length === 0) return 0.5;
+    return Math.max(0.5, ...shap.map((s) => Math.abs(s.v)));
+  }, [shap]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px] animate-fade-in">
@@ -139,12 +196,12 @@ export function StepAnalysis({
           {/* SHAP */}
           <div className="rounded-2xl border border-hairline bg-panel/40 p-4">
             <div className="mb-2 text-sm font-medium">SHAP feature contributions</div>
-            <div className="h-[260px]">
+            <div className="h-[300px]" style={{ minHeight: "300px" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={shap} layout="vertical" margin={{ left: 8, right: 16 }}>
                   <XAxis
                     type="number"
-                    domain={[-0.5, 0.5]}
+                    domain={[-maxAbsChart, maxAbsChart]}
                     tick={{ fill: "oklch(0.70 0.02 250)", fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
@@ -202,16 +259,51 @@ export function StepAnalysis({
 
         {loading && <p className="mt-4 text-sm text-muted-foreground">Loading SHAP...</p>}
 
-        {shapData && (
+        {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+
+        {!loading && topFeatures.length === 0 && (
+          <p className="mt-4 text-sm text-muted-foreground">No SHAP data</p>
+        )}
+
+        {topFeatures.length > 0 && (
           <div className="mt-4 rounded-2xl border border-hairline bg-panel/40 p-5">
             <h3 className="text-sm font-medium">Top Features</h3>
-            <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-              {shapData.features.slice(0, 5).map((f, i) => (
-                <div key={i}>
-                  {f.name} → {f.importance_score.toFixed(3)}
-                </div>
-              ))}
+            <div className="mt-3 space-y-3 text-sm text-muted-foreground">
+              {topFeatures.map((f) => {
+                const signedValue = `${f.importance_score >= 0 ? "+" : ""}${f.importance_score.toFixed(2)}`;
+                const widthPercent = `${(Math.abs(f.importance_score) / maxAbsImportance) * 100}%`;
+                const impactLabel = f.importance_score >= 0 ? "Good" : "Risk";
+                return (
+                  <div key={f.name} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span>{f.name}</span>
+                      <span className={f.importance_score > 0 ? "text-primary" : "text-destructive"}>
+                        {`→ ${signedValue} (${impactLabel})`}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-panel-2">
+                      <div
+                        className="h-full"
+                        style={{
+                          width: widthPercent,
+                          background: f.importance_score > 0 ? "oklch(0.88 0.27 145)" : "oklch(0.65 0.24 25)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+
+            <p className="mt-4 text-sm text-muted-foreground">
+              {explanationText}
+            </p>
+
+            {shapData && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Base value: {shapData.base_value.toFixed(2)}
+                </div>
+            )}
           </div>
         )}
 

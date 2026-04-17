@@ -9,7 +9,7 @@ export function StepRegion({
 }: {
   selected: Region | null;
   onSelect: (r: Region) => void;
-  onNext: () => void;
+  onNext: (r: Region) => void;
 }) {
   const [q, setQ] = useState("");
   const filtered = REGIONS.filter(
@@ -113,7 +113,7 @@ export function StepRegion({
               ))}
             </dl>
             <button
-              onClick={onNext}
+              onClick={() => onNext(selected)}
               className="mt-6 w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.01]"
             >
               Continue to scenario →

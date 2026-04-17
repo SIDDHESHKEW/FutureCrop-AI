@@ -15,6 +15,7 @@ const PHASES = [
 ];
 
 const TOTAL_MS = PHASES.reduce((sum, phase) => sum + phase.ms, 0);
+const MIN_SIMULATION_MS = 1800;
 
 export function StepSimulate({
   onDone,
@@ -22,8 +23,8 @@ export function StepSimulate({
   scenario,
 }: {
   onDone: (predictions: PredictionItem[]) => void;
-  region?: string;
-  scenario?: string;
+  region: string;
+  scenario: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,12 +32,25 @@ export function StepSimulate({
   const [progress, setProgress] = useState(0);
 
   const handleRun = async () => {
+    const genotypes = ["G-101", "G-102"];
+
+    console.log("REGION:", region);
+    console.log("SCENARIO:", scenario);
+
+    if (!region || !scenario || genotypes.length === 0) {
+      alert("Please select region and scenario first");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setPhase(0);
     setProgress(0);
 
     const start = Date.now();
+    const minDurationPromise = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, MIN_SIMULATION_MS);
+    });
     const timerId = window.setInterval(() => {
       const elapsed = Date.now() - start;
       const ratio = Math.min(elapsed / TOTAL_MS, 0.95);
@@ -56,16 +70,20 @@ export function StepSimulate({
     }, 120);
 
     try {
+      const requestBody = {
+        region,
+        scenario,
+        genotypes,
+      };
+
+      console.log("PREDICT REQUEST BODY:", requestBody);
+
       const res = await fetch("http://127.0.0.1:8000/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          region: region ?? "Punjab",
-          scenario: scenario ?? "RCP_8.5",
-          genotypes: ["G-101", "G-102"],
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
@@ -73,6 +91,7 @@ export function StepSimulate({
       }
 
       const data = await res.json();
+      await minDurationPromise;
       const nextPredictions = Array.isArray(data?.predictions) ? data.predictions : [];
 
       console.log("PREDICT RESPONSE:", data);

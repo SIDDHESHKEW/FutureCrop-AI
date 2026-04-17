@@ -3,10 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 
 try:
 	from backend.routes.predict_routes import router as predict_router
-	from backend.routes.shap_routes import router as shap_router
 except ModuleNotFoundError:
 	from routes.predict_routes import router as predict_router
-	from routes.shap_routes import router as shap_router
+
+try:
+	from backend.routes.pdf_routes import router as pdf_router
+except ModuleNotFoundError:
+	from routes.pdf_routes import router as pdf_router
+
+try:
+	from backend.routes.shap_routes import router as shap_router
+except ModuleNotFoundError:
+	try:
+		from routes.shap_routes import router as shap_router
+	except ModuleNotFoundError:
+		shap_router = None
 
 app = FastAPI(title="FutureCrop AI")
 
@@ -19,4 +30,6 @@ app.add_middleware(
 )
 
 app.include_router(predict_router)
-app.include_router(shap_router)
+app.include_router(pdf_router)
+if shap_router is not None:
+	app.include_router(shap_router)

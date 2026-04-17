@@ -1,6 +1,6 @@
 import type { Region, Scenario } from "@/lib/futurecrop-data";
-import { ChevronRight, Droplets, Leaf, ShieldAlert, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronRight, Leaf, TrendingUp } from "lucide-react";
+import { useMemo } from "react";
 
 export type Genotype = {
   id: string;
@@ -18,39 +18,6 @@ type PredictionItem = {
   confidence: number;
 };
 
-function makeGenotypes(seed: string): Genotype[] {
-  const base = seed.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const traits = ["Drought-tolerant", "Heat-resilient", "Salt-resistant", "Pest-resistant", "High-density"];
-  return Array.from({ length: 5 }, (_, i) => {
-    const r = ((base * (i + 1) * 9301 + 49297) % 233280) / 233280;
-    return {
-      id: `Z-${(7000 + ((base + i * 53) % 999)).toString().padStart(4, "0")}`,
-      name: ["Maize", "Wheat", "Sorghum", "Soybean", "Rice"][i],
-      yield: 6 + r * 5,
-      risk: 0.05 + ((1 - r) * 0.5) ** 1.4,
-      water: 0.4 + r * 0.55,
-      confidence: 0.82 + r * 0.16,
-      trait: traits[(i + base) % traits.length],
-    };
-  }).sort((a, b) => b.yield - a.yield);
-}
-
-function makeHeatmap(seed: string, severity: number) {
-  const rows = 12, cols = 28;
-  const base = seed.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return Array.from({ length: rows * cols }, (_, i) => {
-    const x = i % cols, y = Math.floor(i / cols);
-    const dx = x - cols / 2, dy = y - rows / 2;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const noise =
-      Math.sin((x + base * 0.01) * 1.3) *
-      Math.cos((y + base * 0.02) * 1.7) *
-      Math.sin((x + y) * 0.4);
-    const v = 0.75 - dist / 18 + noise * 0.22 - severity * 0.18;
-    return Math.max(0, Math.min(1, v));
-  });
-}
-
 export function StepResults({
   predictions = [],
   region,
@@ -66,12 +33,9 @@ export function StepResults({
   onConfirm: () => void;
   onBack: () => void;
 }) {
-  const seed = `${region.id}-${scenario.ssp}-${scenario.year}`;
-  const severity = Math.min(1, scenario.warming / 5);
-  const cells = useMemo(() => makeHeatmap(seed, severity), [seed, severity]);
-  const realData = predictions && predictions.length > 0 ? predictions : [];
-  const fallbackGenotypes = useMemo(() => makeGenotypes(seed), [seed]);
-  const backendGenotypes = useMemo<Genotype[]>(
+  const realData = useMemo<PredictionItem[]>(() => predictions, [predictions]);
+
+  const genotypes = useMemo<Genotype[]>(
     () => realData.map((g, i) => ({
       id: g.id,
       name: `Genotype ${i + 1}`,
@@ -83,19 +47,64 @@ export function StepResults({
     })),
     [realData],
   );
-  const genotypes = realData.length > 0 ? backendGenotypes : fallbackGenotypes;
-  const top = genotypes[0];
-  const [hover, setHover] = useState<{ x: number; y: number; v: number } | null>(null);
 
-  const cols = 28;
-  const meanYield = realData.length
-    ? (realData.reduce((sum, g) => sum + g.yield_estimate, 0) / realData.length).toFixed(2)
-    : "0";
-  const bestGenotype = realData.length
-    ? realData.reduce((a, b) => (a.yield_estimate > b.yield_estimate ? a : b)).id
-    : "-";
-  const heatmapMeanYield = cells.reduce((a, b) => a + b, 0) / cells.length;
-  const stress = 1 - heatmapMeanYield;
+  const bestPrediction = useMemo<PredictionItem | null>(() => {
+    if (realData.length === 0) return null;
+    return realData.reduce((a, b) =>
+      a.yield_estimate > b.yield_estimate ? a : b,
+    );
+  }, [realData]);
+
+  const bestGenotype = useMemo(() => (bestPrediction ? bestPrediction.id : "-"), [bestPrediction]);
+
+  const meanYield = useMemo(() => {
+    if (realData.length === 0) return "0.00";
+    const avg = realData.reduce((sum, g) => sum + g.yield_estimate, 0) / realData.length;
+    return avg.toFixed(2);
+  }, [realData]);
+
+  const top = useMemo(() => {
+    if (!bestPrediction) return null;
+    return genotypes.find((g) => g.id === bestPrediction.id) ?? null;
+  }, [bestPrediction, genotypes]);
+
+  if (realData.length === 0) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px] animate-fade-in">
+        <div className="glass-strong rounded-3xl p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                Step 04 · Results
+              </div>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight">
+                {region.name} · {scenario.year}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {scenario.ssp} · +{scenario.warming.toFixed(1)} °C · {scenario.co2} ppm
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-hairline bg-panel/40 p-5 text-sm text-muted-foreground">
+            No data available
+          </div>
+
+          <div className="mt-6 flex justify-between">
+            <button onClick={onBack} className="rounded-xl glass px-4 py-2 text-sm hover:bg-panel-2">
+              ← Re-configure
+            </button>
+            <button
+              onClick={onConfirm}
+              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow"
+            >
+              Generate breeding blueprint →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px] animate-fade-in">
@@ -120,58 +129,9 @@ export function StepResults({
         {/* KPIs */}
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Kpi icon={TrendingUp} label="Mean yield" value={`${meanYield} t/ha`} tone="primary" />
-          <Kpi icon={ShieldAlert} label="Climate stress" value={`${(stress * 100).toFixed(0)}%`} tone="warning" />
-          <Kpi icon={Droplets} label="Water deficit" value={`${(severity * 38).toFixed(0)} mm`} tone="accent" />
           <Kpi icon={Leaf} label="Best genotype" value={bestGenotype} tone="violet" />
-        </div>
-
-        {realData.length === 0 && (
-          <div className="mt-3 text-xs text-muted-foreground">No backend data — using fallback</div>
-        )}
-
-        {/* Heatmap */}
-        <div className="relative mt-6 rounded-2xl border border-hairline bg-background/40 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Predicted yield surface</div>
-            <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
-              <span className="h-2 w-4 rounded-sm" style={{ background: "oklch(0.65 0.24 25)" }} />
-              low
-              <span className="h-2 w-4 rounded-sm" style={{ background: "oklch(0.78 0.18 70)" }} />
-              mid
-              <span className="h-2 w-4 rounded-sm" style={{ background: "oklch(0.85 0.27 145)" }} />
-              high
-            </div>
-          </div>
-          <div
-            className="grid gap-1"
-            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-            onMouseLeave={() => setHover(null)}
-          >
-            {cells.map((v, i) => {
-              const hue = v > 0.55 ? "145" : v > 0.35 ? "70" : "25";
-              const chroma = v > 0.55 ? 0.27 : v > 0.35 ? 0.18 : 0.24;
-              const light = 0.32 + v * 0.55;
-              return (
-                <div
-                  key={i}
-                  onMouseEnter={() =>
-                    setHover({ x: i % cols, y: Math.floor(i / cols), v })
-                  }
-                  className="aspect-square rounded-[3px] transition-transform hover:scale-[1.4] hover:z-10"
-                  style={{
-                    background: `oklch(${light} ${chroma} ${hue})`,
-                    boxShadow: v > 0.65 ? `0 0 6px oklch(${light} ${chroma} ${hue} / 0.7)` : "none",
-                  }}
-                />
-              );
-            })}
-          </div>
-          {hover && (
-            <div className="mt-3 flex items-center justify-between rounded-lg bg-panel/60 px-3 py-2 font-mono text-[11px] text-muted-foreground">
-              <span>cell ({hover.x}, {hover.y})</span>
-              <span>yield index: <span className="text-primary">{hover.v.toFixed(3)}</span></span>
-            </div>
-          )}
+          <Kpi icon={TrendingUp} label="Predictions" value={`${realData.length}`} tone="accent" />
+          <Kpi icon={TrendingUp} label="Top confidence" value={`${(Math.max(...realData.map((g) => g.confidence)) * 100).toFixed(1)}%`} tone="warning" />
         </div>
 
         {/* Genotype table */}
@@ -185,10 +145,7 @@ export function StepResults({
               <thead className="bg-panel/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2.5">Genotype</th>
-                  <th className="px-4 py-2.5">Crop</th>
-                  <th className="px-4 py-2.5">Trait</th>
                   <th className="px-4 py-2.5 text-right">Yield</th>
-                  <th className="px-4 py-2.5 text-right">Risk</th>
                   <th className="px-4 py-2.5 text-right">Confidence</th>
                   <th />
                 </tr>
@@ -201,12 +158,7 @@ export function StepResults({
                     className="group cursor-pointer border-t border-hairline transition-colors hover:bg-panel-2/60"
                   >
                     <td className="px-4 py-3 font-mono text-primary">{g.id}</td>
-                    <td className="px-4 py-3">{g.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{g.trait}</td>
                     <td className="px-4 py-3 text-right font-mono">{g.yield.toFixed(2)} t/ha</td>
-                    <td className="px-4 py-3 text-right">
-                      <RiskPill v={g.risk} />
-                    </td>
                     <td className="px-4 py-3 text-right font-mono text-muted-foreground">
                       {(g.confidence * 100).toFixed(1)}%
                     </td>
@@ -234,30 +186,30 @@ export function StepResults({
       </div>
 
       {/* Side: Top recommendation */}
-      <div className="glass rounded-3xl p-6">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">
-          Recommended genotype
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="font-mono text-primary text-lg">{top.id}</span>
-          <span className="rounded-full bg-panel-2 px-2 py-0.5 text-[10px] text-muted-foreground">
-            {top.trait}
-          </span>
-        </div>
-        <div className="text-sm text-muted-foreground">{top.name}</div>
+      {top && (
+        <div className="glass rounded-3xl p-6">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            Recommended genotype
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="font-mono text-primary text-lg">{top.id}</span>
+            <span className="rounded-full bg-panel-2 px-2 py-0.5 text-[10px] text-muted-foreground">
+              {top.trait}
+            </span>
+          </div>
+          <div className="text-sm text-muted-foreground">{top.name}</div>
 
-        <Bar label="Predicted yield" v={top.yield / 12} display={`${top.yield.toFixed(2)} t/ha`} tone="primary" />
-        <Bar label="Climate resilience" v={top.water} display={`${(top.water * 100).toFixed(0)}%`} tone="accent" />
-        <Bar label="Risk index" v={top.risk} display={top.risk.toFixed(2)} tone="warning" inverse />
-        <Bar label="Model confidence" v={top.confidence} display={`${(top.confidence * 100).toFixed(1)}%`} tone="violet" />
+          <Bar label="Predicted yield" v={Math.min(top.yield / 12, 1)} display={`${top.yield.toFixed(2)} t/ha`} tone="primary" />
+          <Bar label="Model confidence" v={top.confidence} display={`${(top.confidence * 100).toFixed(1)}%`} tone="violet" />
 
-        <button
-          onClick={() => onPickGenotype(top)}
-          className="mt-6 w-full rounded-xl glass py-2.5 text-sm font-medium hover:bg-panel-2"
-        >
-          Open deep analysis
-        </button>
-      </div>
+          <button
+            onClick={() => onPickGenotype(top)}
+            className="mt-6 w-full rounded-xl glass py-2.5 text-sm font-medium hover:bg-panel-2"
+          >
+            Open deep analysis
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -278,17 +230,6 @@ function Kpi({
       </div>
       <div className={`mt-2 font-mono text-xl ${color}`}>{value}</div>
     </div>
-  );
-}
-
-function RiskPill({ v }: { v: number }) {
-  const tone = v < 0.2 ? ["bg-primary/15", "text-primary", "Low"]
-    : v < 0.4 ? ["bg-accent/15", "text-accent", "Moderate"]
-    : ["bg-destructive/15", "text-destructive", "High"];
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${tone[0]} ${tone[1]}`}>
-      {tone[2]} · {v.toFixed(2)}
-    </span>
   );
 }
 
