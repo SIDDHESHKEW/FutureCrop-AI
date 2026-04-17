@@ -1,5 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Cpu, Database, Atom, Brain, Check } from "lucide-react";
+
+type PredictionItem = {
+  id: string;
+  yield_estimate: number;
+  confidence: number;
+};
 
 const PHASES = [
   { icon: Database, label: "Loading regional climate tensors", ms: 700 },
@@ -8,39 +14,80 @@ const PHASES = [
   { icon: Brain, label: "Computing SHAP attributions", ms: 700 },
 ];
 
-export function StepSimulate({ onDone }: { onDone: () => void }) {
+const TOTAL_MS = PHASES.reduce((sum, phase) => sum + phase.ms, 0);
+
+export function StepSimulate({
+  onDone,
+  region,
+  scenario,
+}: {
+  onDone: (predictions: PredictionItem[]) => void;
+  region?: string;
+  scenario?: string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState(0);
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    let i = 0;
-    function run() {
-      if (i >= PHASES.length) {
-        if (!cancelled) setTimeout(onDone, 350);
-        return;
-      }
-      const start = performance.now();
-      const dur = PHASES[i].ms;
-      function tick(t: number) {
-        if (cancelled) return;
-        const elapsed = t - start;
-        const local = Math.min(1, elapsed / dur);
-        const overall = (i + local) / PHASES.length;
-        setProgress(overall);
-        if (local < 1) {
-          requestAnimationFrame(tick);
-        } else {
-          i++;
-          setPhase(i);
-          run();
+  const handleRun = async () => {
+    setLoading(true);
+    setError(null);
+    setPhase(0);
+    setProgress(0);
+
+    const start = Date.now();
+    const timerId = window.setInterval(() => {
+      const elapsed = Date.now() - start;
+      const ratio = Math.min(elapsed / TOTAL_MS, 0.95);
+      setProgress(ratio);
+
+      let spent = 0;
+      let currentPhase = 0;
+      for (let i = 0; i < PHASES.length; i++) {
+        spent += PHASES[i].ms;
+        if (elapsed < spent) {
+          currentPhase = i;
+          break;
         }
+        currentPhase = PHASES.length;
       }
-      requestAnimationFrame(tick);
+      setPhase(Math.min(currentPhase, PHASES.length));
+    }, 120);
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          region: region ?? "Punjab",
+          scenario: scenario ?? "RCP_8.5",
+          genotypes: ["G-101", "G-102"],
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Prediction request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      const nextPredictions = Array.isArray(data?.predictions) ? data.predictions : [];
+
+      console.log("PREDICT RESPONSE:", data);
+      setProgress(1);
+      setPhase(PHASES.length);
+      onDone(nextPredictions);
+    } catch (err) {
+      console.error("ERROR:", err);
+      setError("Simulation failed");
+      alert("Simulation failed");
+    } finally {
+      window.clearInterval(timerId);
+      setLoading(false);
     }
-    run();
-    return () => { cancelled = true; };
-  }, [onDone]);
+  };
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -60,7 +107,6 @@ export function StepSimulate({ onDone }: { onDone: () => void }) {
             Real-time inference on the global decision engine.
           </p>
 
-          {/* Animated rings */}
           <div className="my-10 flex items-center justify-center">
             <div className="relative h-44 w-44">
               <div
@@ -88,11 +134,10 @@ export function StepSimulate({ onDone }: { onDone: () => void }) {
             </div>
           </div>
 
-          {/* Phase list */}
           <ul className="space-y-2">
             {PHASES.map((p, i) => {
               const done = i < phase;
-              const active = i === phase;
+              const active = i === phase && loading;
               return (
                 <li
                   key={p.label}
@@ -115,7 +160,7 @@ export function StepSimulate({ onDone }: { onDone: () => void }) {
                     {p.label}
                   </span>
                   {active && (
-                    <span className="ml-auto font-mono text-[10px] text-primary">running…</span>
+                    <span className="ml-auto font-mono text-[10px] text-primary">running...</span>
                   )}
                   {done && <span className="ml-auto font-mono text-[10px] text-muted-foreground">ok</span>}
                 </li>
@@ -123,12 +168,22 @@ export function StepSimulate({ onDone }: { onDone: () => void }) {
             })}
           </ul>
 
-          {/* Bottom progress bar */}
           <div className="mt-6 h-1 overflow-hidden rounded-full bg-panel-2">
             <div
               className="h-full transition-[width] duration-100"
               style={{ width: `${progress * 100}%`, background: "var(--gradient-neon)" }}
             />
+          </div>
+
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={handleRun}
+              disabled={loading}
+              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow disabled:opacity-60"
+            >
+              {loading ? "Running..." : "Run Simulation"}
+            </button>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
         </div>
       </div>

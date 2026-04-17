@@ -12,6 +12,12 @@ export type Genotype = {
   trait: string;
 };
 
+type PredictionItem = {
+  id: string;
+  yield_estimate: number;
+  confidence: number;
+};
+
 function makeGenotypes(seed: string): Genotype[] {
   const base = seed.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const traits = ["Drought-tolerant", "Heat-resilient", "Salt-resistant", "Pest-resistant", "High-density"];
@@ -46,12 +52,14 @@ function makeHeatmap(seed: string, severity: number) {
 }
 
 export function StepResults({
+  predictions = [],
   region,
   scenario,
   onPickGenotype,
   onConfirm,
   onBack,
 }: {
+  predictions?: PredictionItem[];
   region: Region;
   scenario: Scenario;
   onPickGenotype: (g: Genotype) => void;
@@ -61,13 +69,33 @@ export function StepResults({
   const seed = `${region.id}-${scenario.ssp}-${scenario.year}`;
   const severity = Math.min(1, scenario.warming / 5);
   const cells = useMemo(() => makeHeatmap(seed, severity), [seed, severity]);
-  const genotypes = useMemo(() => makeGenotypes(seed), [seed]);
+  const realData = predictions && predictions.length > 0 ? predictions : [];
+  const fallbackGenotypes = useMemo(() => makeGenotypes(seed), [seed]);
+  const backendGenotypes = useMemo<Genotype[]>(
+    () => realData.map((g, i) => ({
+      id: g.id,
+      name: `Genotype ${i + 1}`,
+      trait: "Backend prediction",
+      yield: g.yield_estimate,
+      risk: Math.max(0, Math.min(1, 1 - g.confidence)),
+      water: Math.max(0, Math.min(1, g.confidence)),
+      confidence: g.confidence,
+    })),
+    [realData],
+  );
+  const genotypes = realData.length > 0 ? backendGenotypes : fallbackGenotypes;
   const top = genotypes[0];
   const [hover, setHover] = useState<{ x: number; y: number; v: number } | null>(null);
 
   const cols = 28;
-  const meanYield = cells.reduce((a, b) => a + b, 0) / cells.length;
-  const stress = 1 - meanYield;
+  const meanYield = realData.length
+    ? (realData.reduce((sum, g) => sum + g.yield_estimate, 0) / realData.length).toFixed(2)
+    : "0";
+  const bestGenotype = realData.length
+    ? realData.reduce((a, b) => (a.yield_estimate > b.yield_estimate ? a : b)).id
+    : "-";
+  const heatmapMeanYield = cells.reduce((a, b) => a + b, 0) / cells.length;
+  const stress = 1 - heatmapMeanYield;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px] animate-fade-in">
@@ -91,11 +119,15 @@ export function StepResults({
 
         {/* KPIs */}
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Kpi icon={TrendingUp} label="Mean yield" value={`${(meanYield * 12).toFixed(1)} t/ha`} tone="primary" />
+          <Kpi icon={TrendingUp} label="Mean yield" value={`${meanYield} t/ha`} tone="primary" />
           <Kpi icon={ShieldAlert} label="Climate stress" value={`${(stress * 100).toFixed(0)}%`} tone="warning" />
           <Kpi icon={Droplets} label="Water deficit" value={`${(severity * 38).toFixed(0)} mm`} tone="accent" />
-          <Kpi icon={Leaf} label="Best genotype" value={top.id} tone="violet" />
+          <Kpi icon={Leaf} label="Best genotype" value={bestGenotype} tone="violet" />
         </div>
+
+        {realData.length === 0 && (
+          <div className="mt-3 text-xs text-muted-foreground">No backend data — using fallback</div>
+        )}
 
         {/* Heatmap */}
         <div className="relative mt-6 rounded-2xl border border-hairline bg-background/40 p-4">

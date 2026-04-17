@@ -1,13 +1,73 @@
 import type { Genotype } from "./StepResults";
+import { useEffect, useState } from "react";
 import {
   Bar, BarChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis,
   Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
   ReferenceLine, Cell,
 } from "recharts";
 
+type PredictionItem = {
+  id: string;
+  yield_estimate: number;
+  confidence: number;
+};
+
+type ShapFeature = {
+  name: string;
+  importance_score: number;
+};
+
+type ShapResponse = {
+  features: ShapFeature[];
+  base_value: number;
+};
+
 export function StepAnalysis({
-  genotype, onBack, onConfirm,
-}: { genotype: Genotype; onBack: () => void; onConfirm: () => void }) {
+  genotype, onBack, onConfirm, predictions = [],
+}: {
+  genotype: Genotype;
+  onBack: () => void;
+  onConfirm: () => void;
+  predictions?: PredictionItem[];
+}) {
+  const [shapData, setShapData] = useState<ShapResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const loadShap = async (genotypeId: string) => {
+    setLoading(true);
+
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/shap/${genotypeId}`);
+      if (!res.ok) {
+        throw new Error(`SHAP request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      console.log("SHAP RESPONSE:", data);
+
+      setShapData(data);
+    } catch (err) {
+      console.error(err);
+      alert("SHAP failed");
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (predictions && predictions.length > 0) {
+      const best = predictions.reduce((a, b) =>
+        a.yield_estimate > b.yield_estimate ? a : b,
+      );
+
+      loadShap(best.id);
+      return;
+    }
+
+    loadShap(genotype.id);
+  }, [predictions, genotype.id]);
+
   const radar = [
     { feature: "Yield", v: (genotype.yield / 12) * 100 },
     { feature: "Drought", v: genotype.water * 100 },
@@ -139,6 +199,21 @@ export function StepAnalysis({
             </li>
           </ol>
         </div>
+
+        {loading && <p className="mt-4 text-sm text-muted-foreground">Loading SHAP...</p>}
+
+        {shapData && (
+          <div className="mt-4 rounded-2xl border border-hairline bg-panel/40 p-5">
+            <h3 className="text-sm font-medium">Top Features</h3>
+            <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+              {shapData.features.slice(0, 5).map((f, i) => (
+                <div key={i}>
+                  {f.name} → {f.importance_score.toFixed(3)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex justify-between">
           <button onClick={onBack} className="rounded-xl glass px-4 py-2 text-sm hover:bg-panel-2">

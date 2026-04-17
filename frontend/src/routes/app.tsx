@@ -26,16 +26,32 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppConsole() {
+  type PredictionItem = {
+    id: string;
+    yield_estimate: number;
+    confidence: number;
+  };
+
   const [step, setStep] = useState<StepKey>("region");
   const [region, setRegion] = useState<Region | null>(REGIONS[0]);
   const [scenario, setScenario] = useState<Scenario>({
     ssp: "SSP2-4.5", year: 2050, warming: 2.7, co2: 603,
   });
   const [genotype, setGenotype] = useState<Genotype | null>(null);
+  const [predictions, setPredictions] = useState<PredictionItem[]>([]);
+  const StepSimulateWithSetters = StepSimulate as any;
+  const StepResultsWithPredictions = StepResults as any;
 
   const reset = () => {
     setStep("region");
     setGenotype(null);
+  };
+
+  const handleSimulationDone = (nextPredictions?: PredictionItem[]) => {
+    if (Array.isArray(nextPredictions)) {
+      setPredictions(nextPredictions);
+    }
+    setStep("results");
   };
 
   return (
@@ -93,7 +109,7 @@ function AppConsole() {
           <StepRegion
             selected={region}
             onSelect={setRegion}
-            onNext={() => region && setStep("scenario")}
+            onNext={() => setStep("scenario")}
           />
         )}
         {step === "scenario" && (
@@ -104,12 +120,18 @@ function AppConsole() {
             onNext={() => setStep("simulate")}
           />
         )}
-        {step === "simulate" && <StepSimulate onDone={() => setStep("results")} />}
+        {step === "simulate" && (
+          <StepSimulateWithSetters
+            onDone={handleSimulationDone}
+            setPredictions={setPredictions}
+          />
+        )}
         {step === "results" && region && (
-          <StepResults
+          <StepResultsWithPredictions
             region={region}
             scenario={scenario}
-            onPickGenotype={(g) => { setGenotype(g); setStep("analysis"); }}
+            predictions={predictions}
+            onPickGenotype={(g: Genotype) => { setGenotype(g); setStep("analysis"); }}
             onConfirm={() => setStep("confirm")}
             onBack={() => setStep("scenario")}
           />
@@ -117,6 +139,7 @@ function AppConsole() {
         {step === "analysis" && genotype && (
           <StepAnalysis
             genotype={genotype}
+            predictions={predictions}
             onBack={() => setStep("results")}
             onConfirm={() => setStep("confirm")}
           />
