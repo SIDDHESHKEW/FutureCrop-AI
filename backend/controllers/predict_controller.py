@@ -1,4 +1,4 @@
-from backend.services.predict_service import run_prediction
+from services.predict_service import run_prediction
 
 
 def predict_controller(request):
