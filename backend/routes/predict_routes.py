@@ -1,6 +1,11 @@
 from fastapi import APIRouter
-from models.predict_model import PredictRequest, PredictResponse
-from controllers.predict_controller import predict_controller
+
+try:
+    from backend.models.predict_model import PredictRequest, PredictResponse
+    from backend.controllers.predict_controller import predict_controller
+except ModuleNotFoundError:
+    from models.predict_model import PredictRequest, PredictResponse
+    from controllers.predict_controller import predict_controller
 
 router = APIRouter()
 

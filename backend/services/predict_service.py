@@ -30,9 +30,7 @@ def get_climate_factors(scenario):
 def compute_stress(temperature, rainfall):
     heat_stress = max(0, (temperature - 32) * 0.05)
     drought_stress = max(0, (0.7 - rainfall) * 0.5)
-
-    stress_factor = 1 - (heat_stress + drought_stress)
-    return max(stress_factor, 0.5)
+    return max(1 - (heat_stress + drought_stress), 0.5)
 
 
 def run_prediction(region: str, scenario: str, genotypes: list):
@@ -41,7 +39,7 @@ def run_prediction(region: str, scenario: str, genotypes: list):
     # Genomic features
     X = generate_fake_snp_features(num_genotypes)
 
-    # Training target
+    # Simulated training data
     y = np.random.uniform(2.0, 6.0, num_genotypes)
 
     model = Ridge(alpha=1.0)
@@ -49,8 +47,9 @@ def run_prediction(region: str, scenario: str, genotypes: list):
 
     base_predictions = model.predict(X)
 
-    # MULTI-SCENARIO SIMULATION
-    scenarios = ["RCP_2.6", "RCP_4.5", "RCP_8.5"]
+    # USE ACTUAL SCENARIO FROM REQUEST
+    temperature, rainfall, par = get_climate_factors(scenario)
+    stress_factor = compute_stress(temperature, rainfall)
 
     predictions = []
 
@@ -58,17 +57,7 @@ def run_prediction(region: str, scenario: str, genotypes: list):
         genetic_vector = X[i]
         rue = compute_rue(genetic_vector)
 
-        scenario_results = []
-
-        for sc in scenarios:
-            temperature, rainfall, par = get_climate_factors(sc)
-            stress_factor = compute_stress(temperature, rainfall)
-
-            yield_value = base_predictions[i] * rue * par * stress_factor
-            scenario_results.append(yield_value)
-
-        # Aggregate results (average future performance)
-        final_yield = np.mean(scenario_results)
+        final_yield = base_predictions[i] * rue * par * stress_factor
 
         predictions.append({
             "id": genotype,

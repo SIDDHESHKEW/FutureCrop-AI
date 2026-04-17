@@ -1,5 +1,9 @@
 from fastapi import APIRouter
-from controllers.shap_controller import shap_controller
+
+try:
+    from backend.controllers.shap_controller import shap_controller
+except ModuleNotFoundError:
+    from controllers.shap_controller import shap_controller
 
 router = APIRouter()
 
