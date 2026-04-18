@@ -40,4 +40,5 @@ export type Scenario = {
   temperatureDelta: number; // °C
   rainfallChange: number; // %
   co2: number; // ppm
+  soilMoisture?: number; // %
 };

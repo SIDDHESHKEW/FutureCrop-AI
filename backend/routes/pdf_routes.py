@@ -1,5 +1,7 @@
+import io
+
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 
 try:
     from backend.models.pdf_model import GeneratePdfRequest
@@ -14,13 +16,13 @@ router = APIRouter()
 @router.post("/generate-pdf")
 def generate_pdf(request: GeneratePdfRequest):
     try:
-        file_path, report_name = generate_pdf_controller(request)
-        return FileResponse(
-            path=file_path,
+        pdf_bytes = generate_pdf_controller(request)
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
             media_type="application/pdf",
-            filename=report_name,
+            headers={"Content-Disposition": "attachment; filename=blueprint.pdf"},
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Failed to generate PDF") from exc
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {exc}") from exc

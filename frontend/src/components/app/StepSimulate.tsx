@@ -47,11 +47,13 @@ export function StepSimulate({
   region,
   scenario,
   crop,
+  soil,
 }: {
   onDone: (predictions: PredictionItem[]) => void;
   region: string;
   scenario: string;
   crop: string;
+  soil?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +67,7 @@ export function StepSimulate({
     console.log("REGION:", region);
     console.log("SCENARIO:", scenario);
     console.log("CROP:", crop);
+    console.log("SOIL:", soil);
 
     if (!region || !scenario || !crop || genotypes.length === 0) {
       alert("Please select region, scenario and crop first");
@@ -102,6 +105,7 @@ export function StepSimulate({
       const requestBody = {
         region,
         scenario,
+        soil,
         crop,
         genotypes,
       };

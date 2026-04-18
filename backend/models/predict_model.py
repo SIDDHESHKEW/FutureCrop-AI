@@ -5,6 +5,7 @@ from typing import List
 class PredictRequest(BaseModel):
     region: str
     scenario: str
+    soil: str | None = None
     genotypes: List[str]
 
 

@@ -40,6 +40,16 @@ export function StepConfirm({
             confidence: genotype.confidence,
           }];
 
+      const bestPrediction = requestPredictions.reduce((best, current) => (
+        current.yield_estimate > best.yield_estimate ? current : best
+      ));
+
+      const featureDefaults = [
+        { name: "Heat Tolerance", impact: 0.18 },
+        { name: "Drought Resistance", impact: -0.12 },
+        { name: "Soil Efficiency", impact: 0.25 },
+      ];
+
       const response = await fetch("http://127.0.0.1:8000/generate-pdf", {
         method: "POST",
         headers: {
@@ -48,7 +58,14 @@ export function StepConfirm({
         body: JSON.stringify({
           region: region.name,
           scenario: scenario.name,
-          predictions: requestPredictions,
+          crop: genotype.name,
+          yield: Number(bestPrediction.yield_estimate.toFixed(2)),
+          confidence: Number(bestPrediction.confidence.toFixed(2)),
+          temperature: `+${scenario.temperatureDelta.toFixed(1)}°C`,
+          rainfall: `${scenario.rainfallChange.toFixed(0)}%`,
+          co2: `${scenario.co2} ppm`,
+          features: featureDefaults,
+          hash: txid,
         }),
       });
 

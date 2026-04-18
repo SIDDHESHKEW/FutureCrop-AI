@@ -8,6 +8,7 @@ def predict_controller(request):
     result = run_prediction(
         region=request.region,
         scenario=request.scenario,
+        soil=request.soil,
         genotypes=request.genotypes
     )
 

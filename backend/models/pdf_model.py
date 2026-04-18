@@ -1,14 +1,9 @@
-from pydantic import BaseModel, Field
 from typing import List
 
-
-class PdfPredictionItem(BaseModel):
-    id: str
-    yield_estimate: float
-    confidence: float
+from pydantic import BaseModel, Field
 
 
-class PdfShapSummaryItem(BaseModel):
+class FeatureItem(BaseModel):
     name: str
     impact: float
 
@@ -16,7 +11,11 @@ class PdfShapSummaryItem(BaseModel):
 class GeneratePdfRequest(BaseModel):
     region: str
     scenario: str
-    predictions: List[PdfPredictionItem]
-    crop: str = "N/A"
-    bestGenotype: str | None = None
-    shapSummary: List[PdfShapSummaryItem] = Field(default_factory=list)
+    crop: str
+    yield_value: float = Field(alias="yield")
+    confidence: float
+    temperature: str
+    rainfall: str
+    co2: str
+    features: List[FeatureItem]
+    hash: str

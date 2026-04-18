@@ -41,6 +41,7 @@ function AppConsole() {
     temperatureDelta: 2.5,
     rainfallChange: -10,
     co2: 520,
+    soilMoisture: 60,
   });
   const [crop, setCrop] = useState<string>("Wheat");
   const [genotype, setGenotype] = useState<Genotype | null>(null);
@@ -178,6 +179,7 @@ function AppConsole() {
             region={region.name}
             scenario={scenario.name}
             crop={crop}
+            soil={region.soil}
           />
         )}
         {step === "results" && region && (

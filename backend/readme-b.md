@@ -12,8 +12,10 @@ You can run from either directory:
 Use the backend virtual environment Python:
 
 ```powershell
-& "./.venv/Scripts/python.exe" -m pip install fastapi uvicorn numpy scikit-learn reportlab
+& "./.venv/Scripts/python.exe" -m pip install fastapi uvicorn numpy scikit-learn reportlab pdfkit
 ```
+
+Install wkhtmltopdf (required by pdfkit) and ensure `wkhtmltopdf` is available in PATH.
 
 ## Start backend server
 If you run from project root:

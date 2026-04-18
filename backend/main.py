@@ -24,6 +24,11 @@ except ModuleNotFoundError:
 	except ModuleNotFoundError:
 		shap_router = None
 
+try:
+	from app.routers.report import router as report_router
+except ModuleNotFoundError:
+	report_router = None
+
 app = FastAPI(title="FutureCrop AI")
 
 app.add_middleware(
@@ -39,3 +44,5 @@ app.include_router(pdf_router)
 app.include_router(detect_crop_router)
 if shap_router is not None:
 	app.include_router(shap_router)
+if report_router is not None:
+	app.include_router(report_router)

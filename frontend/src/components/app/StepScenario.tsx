@@ -176,6 +176,22 @@ export function StepScenario({
             />
           </div>
 
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-sm">
+              <span>Soil Moisture (%)</span>
+              <span className="font-mono text-accent">{(activeScenario.soilMoisture ?? 60).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={scenario.soilMoisture ?? 60}
+              onChange={(e) => updateScenario({ soilMoisture: Number(e.target.value) })}
+              className="mt-2 w-full accent-[oklch(0.88_0.27_145)]"
+            />
+          </div>
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4 text-accent" />
@@ -236,6 +252,7 @@ export function StepScenario({
           <Stat icon={Wind} label="Rainfall change" value={`${activeScenario.rainfallChange.toFixed(0)}%`} accent="text-accent" />
           <Stat icon={Wind} label="Atmospheric CO₂" value={`${activeScenario.co2} ppm`} accent="text-accent" />
           <Stat icon={Calendar} label="Horizon" value={`${activeScenario.year}`} accent="text-foreground" />
+          <Stat icon={Wind} label="Soil moisture" value={`${(activeScenario.soilMoisture ?? 60).toFixed(0)}%`} accent="text-accent" />
         </div>
         <div className="mt-6 rounded-xl bg-panel/40 p-4 text-xs text-muted-foreground">
           <span className="text-foreground">Note.</span> Forcing values derived from CMIP6
