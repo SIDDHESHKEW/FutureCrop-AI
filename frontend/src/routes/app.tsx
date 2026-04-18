@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
-import { Stepper, type StepKey } from "@/components/app/Stepper";
+import { Stepper, STEPS, type StepKey } from "@/components/app/Stepper";
 import { StepRegion, type RegionInputData } from "@/components/app/StepRegion";
 import { StepScenario } from "@/components/app/StepScenario";
 import { StepCrop } from "@/components/app/StepCrop";
@@ -83,6 +83,14 @@ function AppConsole() {
     };
   };
 
+  const handleStepClick = (target: StepKey) => {
+    const currentIdx = STEPS.findIndex((s) => s.key === step);
+    const targetIdx = STEPS.findIndex((s) => s.key === target);
+    if (targetIdx <= currentIdx) {
+      setStep(target);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Background */}
@@ -118,7 +126,7 @@ function AppConsole() {
             </Link>
           </div>
           <div className="hidden items-center gap-3 md:flex">
-            <Stepper current={step} />
+            <Stepper current={step} onStepClick={handleStepClick} />
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden items-center gap-1.5 rounded-full glass px-2.5 py-1 text-[11px] text-muted-foreground sm:flex">
@@ -129,7 +137,7 @@ function AppConsole() {
         </div>
         {/* Mobile stepper */}
         <div className="mx-auto max-w-7xl px-6 pb-3 md:hidden">
-          <Stepper current={step} />
+          <Stepper current={step} onStepClick={handleStepClick} />
         </div>
       </header>
 

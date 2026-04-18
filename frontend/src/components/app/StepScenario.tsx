@@ -72,13 +72,13 @@ export function StepScenario({
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div className="glass-strong rounded-3xl p-6 animate-fade-in">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">
-          Step 02 · Climate scenario
+          Step 02 · Climate Setup
         </div>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">
           Configure climate trajectory
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Build a scenario with predefined templates or custom forcing controls.
+          Set climate conditions to generate a climate-resilient recommendation.
         </p>
 
         <label className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -221,7 +221,7 @@ export function StepScenario({
           </button>
           <button
             onClick={() => onNext(activeScenario)}
-            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow"
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)]"
           >
             Choose crop →
           </button>

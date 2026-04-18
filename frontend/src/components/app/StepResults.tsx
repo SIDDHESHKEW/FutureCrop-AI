@@ -80,6 +80,9 @@ export function StepResults({
               <h2 className="mt-1 text-2xl font-semibold tracking-tight">
                 {region.name} · {scenario.year}
               </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review simulation outcomes to choose a climate-resilient recommendation.
+              </p>
               <p className="text-sm text-muted-foreground">
                 {scenario.name} · +{scenario.temperatureDelta.toFixed(1)} °C · {scenario.rainfallChange.toFixed(0)}% rain · {scenario.co2} ppm
               </p>
@@ -96,7 +99,7 @@ export function StepResults({
             </button>
             <button
               onClick={onConfirm}
-              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow"
+              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)]"
             >
               Generate breeding blueprint →
             </button>
@@ -117,12 +120,15 @@ export function StepResults({
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">
               {region.name} · {scenario.year}
             </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review simulation outcomes to choose a climate-resilient recommendation.
+            </p>
             <p className="text-sm text-muted-foreground">
               {scenario.name} · +{scenario.temperatureDelta.toFixed(1)} °C · {scenario.rainfallChange.toFixed(0)}% rain · {scenario.co2} ppm
             </p>
           </div>
           <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-medium text-primary">
-            ● Inference complete
+            Simulation completed successfully
           </span>
         </div>
 
@@ -178,7 +184,7 @@ export function StepResults({
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow"
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)]"
           >
             Generate breeding blueprint →
           </button>

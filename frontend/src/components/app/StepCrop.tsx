@@ -119,13 +119,13 @@ export function StepCrop({
     <div className="mx-auto max-w-3xl animate-fade-in">
       <div className="glass-strong rounded-3xl p-6">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">
-          Step 03 · Crop
+          Step 03 · Crop Selection
         </div>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">
           Select crop type
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose a crop from the list or provide a custom crop name.
+          Choose your crop to refine a climate-resilient recommendation.
         </p>
 
         <div className="mt-6 space-y-4">
@@ -174,7 +174,7 @@ export function StepCrop({
           <button
             onClick={() => onNext(resolvedCrop)}
             disabled={detecting}
-            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow disabled:opacity-60"
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)] disabled:opacity-60"
           >
             Next
           </button>

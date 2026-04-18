@@ -121,14 +121,18 @@ export function StepSimulate({
         />
         <div className="relative">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">
-            Step 04 · Inference
+            Step 04 · Run Simulation
           </div>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">
             Running CropOracle simulation
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Real-time inference on the global decision engine.
+            We are evaluating your selected conditions for a climate-resilient recommendation.
           </p>
+
+          {loading && (
+            <p className="mt-2 text-sm text-primary">Running climate simulation...</p>
+          )}
 
           <div className="my-10 flex items-center justify-center">
             <div className="relative h-44 w-44">
@@ -202,7 +206,7 @@ export function StepSimulate({
             <button
               onClick={handleRun}
               disabled={loading}
-              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow disabled:opacity-60"
+              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)] disabled:opacity-60"
             >
               {loading ? "Running..." : "Run Simulation"}
             </button>

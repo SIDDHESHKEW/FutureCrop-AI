@@ -83,7 +83,7 @@ export function StepConfirm({
         <div className="border-b border-hairline px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
-              Step 07 · Confirm
+              Step 07 · Download Report
             </div>
             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
@@ -93,6 +93,9 @@ export function StepConfirm({
           <h2 className="mt-1 text-xl font-semibold tracking-tight">
             {signed ? "Blueprint generated" : "Confirm breeding blueprint"}
           </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Finalize and download your climate-resilient recommendation report.
+          </p>
         </div>
 
         <div className="space-y-5 px-6 py-6">
@@ -136,11 +139,11 @@ export function StepConfirm({
                   onClick={onBack}
                   className="flex-1 rounded-xl glass py-2.5 text-sm font-medium hover:bg-panel-2"
                 >
-                  Reject
+                  Back
                 </button>
                 <button
                   onClick={() => setSigned(true)}
-                  className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.01]"
+                  className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)]"
                 >
                   Confirm & sign
                 </button>
@@ -155,6 +158,9 @@ export function StepConfirm({
               <div className="mt-1 text-xs text-muted-foreground">
                 Audit hash <span className="font-mono text-foreground">{txid}</span>
               </div>
+              <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+                This report provides a climate-resilient crop recommendation based on your selected conditions.
+              </p>
 
               <div className="mt-6 rounded-2xl border border-hairline bg-panel/40 p-4 text-left">
                 <div className="flex items-center gap-3">
@@ -172,7 +178,7 @@ export function StepConfirm({
                     <button
                       onClick={handleDownloadPdf}
                       disabled={downloading}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary transition-transform hover:scale-[1.02] hover:bg-primary/20 hover:shadow-[0_0_18px_var(--primary)] disabled:opacity-60"
                     >
                     <Download className="h-3.5 w-3.5" /> {downloading ? "Downloading..." : "Download"}
                   </button>

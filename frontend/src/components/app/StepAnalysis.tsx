@@ -151,12 +151,12 @@ export function StepAnalysis({
         <div className="flex items-start justify-between">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
-              Step 06 · Deep analysis
+              Step 06 · AI Insights
             </div>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">
               <span className="font-mono text-primary">{genotype.id}</span> · {genotype.name}
             </h2>
-            <p className="text-sm text-muted-foreground">{genotype.trait} · explainability report</p>
+            <p className="text-sm text-muted-foreground">Understand why this genotype matches your selected conditions.</p>
           </div>
           <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
             SHAP v3 · audited
@@ -257,7 +257,7 @@ export function StepAnalysis({
           </ol>
         </div>
 
-        {loading && <p className="mt-4 text-sm text-muted-foreground">Loading SHAP...</p>}
+        {loading && <p className="mt-4 text-sm text-muted-foreground">Analyzing crop genetics...</p>}
 
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 
@@ -313,7 +313,7 @@ export function StepAnalysis({
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow"
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)]"
           >
             Generate breeding blueprint →
           </button>

@@ -40,7 +40,12 @@ export function StepRegion({
   const mapQueryRaw = customMode
     ? displayName
     : `${selected?.name ?? ""} ${selected?.country ?? ""}`.trim();
-  const mapQuery = encodeURIComponent(mapQueryRaw || "India");
+  const mapPointRaw = customMode
+    ? (mapQueryRaw || "India")
+    : `${selected?.lat ?? 20.5937},${selected?.lon ?? 78.9629}`;
+  const mapZoom = customMode ? 4 : 6;
+  const mapEmbedSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapPointRaw)}&z=${mapZoom}&output=embed`;
+  const mapOpenUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQueryRaw || mapPointRaw)}`;
 
   const handleNext = () => {
     if (customMode) {
@@ -67,13 +72,13 @@ export function StepRegion({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
-              Step 01 · Network
+              Step 01 · Select Location
             </div>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">
               Select an agricultural region
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Choose the geographic network to load climate, soil and genotype layers.
+              Set your location baseline to generate a climate-resilient recommendation.
             </p>
           </div>
           <div className="hidden items-center gap-2 rounded-full glass px-3 py-1.5 text-xs sm:flex">
@@ -173,10 +178,21 @@ export function StepRegion({
               {customMode ? "Custom region" : selected?.country}
             </div>
             {!customMode && selected ? <MiniMap region={selected} /> : null}
-            <div className="mt-4 overflow-hidden rounded-2xl border border-hairline bg-background/50">
+            <div className="mt-4 flex items-center justify-between rounded-t-2xl border border-b-0 border-hairline bg-panel/30 px-3 py-2 text-[11px]">
+              <span className="text-muted-foreground">Live Map</span>
+              <a
+                href={mapOpenUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md bg-primary/15 px-2 py-1 font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                Open in Google Maps
+              </a>
+            </div>
+            <div className="overflow-hidden rounded-b-2xl border border-hairline bg-background/50">
               <iframe
                 title={`${displayName} map`}
-                src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
+                src={mapEmbedSrc}
                 className="h-40 w-full"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
@@ -197,7 +213,7 @@ export function StepRegion({
             </dl>
             <button
               onClick={handleNext}
-              className="mt-6 w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.01]"
+              className="mt-6 w-full rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)]"
             >
               Continue to scenario →
             </button>
