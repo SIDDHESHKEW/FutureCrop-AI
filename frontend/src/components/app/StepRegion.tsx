@@ -177,7 +177,6 @@ export function StepRegion({
             <div className="text-sm text-muted-foreground">
               {customMode ? "Custom region" : selected?.country}
             </div>
-            {!customMode && selected ? <MiniMap region={selected} /> : null}
             <div className="mt-4 flex items-center justify-between rounded-t-2xl border border-b-0 border-hairline bg-panel/30 px-3 py-2 text-[11px]">
               <span className="text-muted-foreground">Live Map</span>
               <a
@@ -223,30 +222,6 @@ export function StepRegion({
             Pick a region to load layers.
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function MiniMap({ region }: { region: Region }) {
-  // Mercator-ish projection of lon/lat into a 160x100 box
-  const x = ((region.lon + 180) / 360) * 100;
-  const y = ((90 - region.lat) / 180) * 100;
-  return (
-    <div className="relative mt-4 aspect-[16/10] overflow-hidden rounded-2xl border border-hairline bg-background/50">
-      <div className="absolute inset-0 grid-bg opacity-60" />
-      {/* Pseudo continents */}
-      <svg viewBox="0 0 100 62.5" className="absolute inset-0 h-full w-full opacity-30">
-        <path
-          d="M10 25 Q15 18 22 22 T35 24 L40 30 L34 36 Q24 40 18 35 Z M50 18 Q60 14 70 18 T88 22 L88 32 Q78 38 68 34 T54 30 Z M48 38 Q55 36 60 42 T68 50 L60 56 Q52 56 48 50 Z"
-          fill="oklch(0.88 0.27 145 / 0.5)"
-        />
-      </svg>
-      <div
-        className="absolute"
-        style={{ left: `${x}%`, top: `${y * 0.625}%`, transform: "translate(-50%, -50%)" }}
-      >
-        <span className="block h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_14px_var(--primary)] animate-glow-pulse" />
       </div>
     </div>
   );

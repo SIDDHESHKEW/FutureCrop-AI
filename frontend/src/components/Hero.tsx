@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, PlayCircle, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { NeuralGrid } from "./NeuralGrid";
 
 export function Hero() {
@@ -42,16 +42,9 @@ export function Hero() {
             to="/app"
             className="group inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:scale-[1.02] neon-glow"
           >
-            Launch App
+            See Future
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:rotate-45" />
           </Link>
-          <a
-            href="#demo"
-            className="inline-flex h-11 items-center gap-2 rounded-xl glass px-5 text-sm font-medium hover:bg-panel-2 transition-colors"
-          >
-            <PlayCircle className="h-4 w-4 text-accent" />
-            View Live Demo
-          </a>
         </div>
 
         {/* Stats strip */}

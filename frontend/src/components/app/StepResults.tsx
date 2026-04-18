@@ -198,7 +198,7 @@ export function StepResults({
             Recommended genotype
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <span className="font-mono text-primary text-lg">{top.id}</span>
+              <span className="font-mono text-primary text-lg">{top.id}</span>
             <span className="rounded-full bg-panel-2 px-2 py-0.5 text-[10px] text-muted-foreground">
               {top.trait}
             </span>

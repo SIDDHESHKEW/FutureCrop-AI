@@ -54,7 +54,7 @@ export function StepAnalysis({
     setError(null);
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/shap/${genotypeId}`);
+      const res = await fetch(`http://127.0.0.1:8000/shap/${encodeURIComponent(genotypeId)}`);
       if (!res.ok) {
         throw new Error(`SHAP request failed with status ${res.status}`);
       }

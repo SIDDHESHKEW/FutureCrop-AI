@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Cpu, Database, Atom, Brain, Check } from "lucide-react";
 
 type PredictionItem = {
@@ -17,6 +17,31 @@ const PHASES = [
 const TOTAL_MS = PHASES.reduce((sum, phase) => sum + phase.ms, 0);
 const MIN_SIMULATION_MS = 1800;
 
+const CROP_BREED_LIBRARY: Record<string, string[]> = {
+  wheat: ["HD 2967", "PBW 343", "WH 1105", "DBW 187"],
+  rice: ["IR64", "Swarna", "Pusa Basmati 1121", "MTU 7029"],
+  maize: ["DHM 117", "HQPM 1", "Vivek QPM 9", "Bioseed 9544"],
+  cotton: ["Bunny Bt", "RCH 2 Bt", "JKCH 1947", "Suraj"],
+  bajra: ["HHB 67", "ICTP 8203", "Raj 171", "ICMH 356"],
+  sugarcane: ["Co 0238", "Co 86032", "Co 98014", "CoJ 64"],
+};
+
+function getCropBreeds(cropName: string): string[] {
+  const key = cropName.trim().toLowerCase();
+  const mapped = CROP_BREED_LIBRARY[key];
+  if (mapped && mapped.length >= 4) {
+    return mapped.slice(0, 4);
+  }
+
+  const normalized = cropName.trim() || "Crop";
+  return [
+    `${normalized} Breed A`,
+    `${normalized} Breed B`,
+    `${normalized} Breed C`,
+    `${normalized} Breed D`,
+  ];
+}
+
 export function StepSimulate({
   onDone,
   region,
@@ -32,16 +57,17 @@ export function StepSimulate({
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState(0);
   const [progress, setProgress] = useState(0);
+  const hasAutoStarted = useRef(false);
 
   const handleRun = async () => {
-    const genotypes = ["G-101", "G-102"];
+    const genotypes = getCropBreeds(crop);
 
     console.log("REGION:", region);
     console.log("SCENARIO:", scenario);
     console.log("CROP:", crop);
 
-    if (!region || !scenario || genotypes.length === 0) {
-      alert("Please select region and scenario first");
+    if (!region || !scenario || !crop || genotypes.length === 0) {
+      alert("Please select region, scenario and crop first");
       return;
     }
 
@@ -111,6 +137,12 @@ export function StepSimulate({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (hasAutoStarted.current) return;
+    hasAutoStarted.current = true;
+    void handleRun();
+  }, []);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -203,13 +235,20 @@ export function StepSimulate({
           </div>
 
           <div className="mt-6 flex items-center gap-3">
-            <button
-              onClick={handleRun}
-              disabled={loading}
-              className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)] disabled:opacity-60"
-            >
-              {loading ? "Running..." : "Run Simulation"}
-            </button>
+            {!error && (
+              <p className="text-sm text-muted-foreground">
+                Simulation started automatically...
+              </p>
+            )}
+            {error && (
+              <button
+                onClick={handleRun}
+                disabled={loading}
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground neon-glow transition-transform hover:scale-[1.02] hover:shadow-[0_0_24px_var(--primary)] disabled:opacity-60"
+              >
+                {loading ? "Running..." : "Retry Simulation"}
+              </button>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
         </div>
