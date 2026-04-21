@@ -1,4 +1,12 @@
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").trim();
+const isLocalHost =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+const fallbackBaseUrl = isLocalHost
+  ? "http://127.0.0.1:8000"
+  : "https://farmercrop-backend.onrender.com";
+
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? fallbackBaseUrl).trim();
 
 export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
 
